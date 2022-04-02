@@ -10,12 +10,19 @@
 #include <Adafruit_NeoPixel.h>
 #include "drum_config.h"
 
-// ACTION: These next three consts must be adjusted to the correct value for each drum
-const drumID myDrum = pawn;   // What drum am I?
-                              // snare, tenor, bass1, bass2, etc.
-const int N_PIXELS_MAIN = 150; // Number of LEDs attached to the Arduino.
-                              // 150 for LED strip, 64 for small grid, 256 for large grid.
-const uint8_t numColors = 3;  // Number of colors
+// ATTN: These next three consts must be adjusted to the correct value for each drum
+const drumID myDrum = black_pawn;   // What drum am I?
+/* Number of LEDs attached to the Arduino.
+ * For 2022, this is 130 (64 for grid + 33 for first strip + 33 for second strip)
+ * Other values could be: 150 for full LED strip, 64 for small grid, 256 for large grid.
+ */
+const int N_PIXELS_MAIN = 130;
+const uint8_t numColors = 2;  // Number of colors
+
+/* Threshold value to decide when the detected sound is a knock or not
+ * Other useful values: 20, 50, 100, 200
+ */
+uint8_t threshold = 65;
 
 // Brightness settings. Valid values are 0-255.
 uint8_t brightness_main = 255;      // Brightness of the main light strip or grid.
@@ -32,10 +39,6 @@ const int BUTTON_PIN = D4;        // Push button is connected to D4 on Wemos wit
 
 const int DELAYVAL = 25;    // Time (in milliseconds) to pause between pixels
 const int LOOP_DELAY = 200; // Time (in milliseconds) to pause between loops
-
-// Threshold value to decide when the detected sound is a knock or not
-// Other useful values: 20, 50, 100, 200
-uint8_t threshold = 65;
 
 // When setting up the NeoPixel library, we tell it how many pixels,
 // and which pin to use to send signals. Note that for older NeoPixel
@@ -63,7 +66,7 @@ void setup() {
   initColors(myDrum);
   
   // Startup sequence(s)
-  //chase(red, green, blue);
+  //chase(255, 0, 0);
   //startup(myColor);
   
   // Set to full brightness for the duration of the sketch
@@ -108,22 +111,27 @@ void loop() {
 
 // Initialize the colors[] array based on the drum ID
 void initColors(drumID drum) {
-  uint32_t black = pixels.Color(0, 0, 0);       // i.e. off
-  uint32_t yellow = pixels.Color(128, 128, 0);
+  uint32_t black = pixels.Color(0, 0, 0);  // i.e. off
   uint32_t red = pixels.Color(255, 0, 0);
-  uint32_t green = pixels.Color(0, 255, 0);
   uint32_t blue = pixels.Color(0, 0, 255);
+
+Serial.print("black: ");
+Serial.println(black);
+Serial.print("blue: ");
+Serial.println(blue);
+Serial.print("red: ");
+Serial.println(red);
+
+  // Other colors, unused for now.
+  /*
+  uint32_t yellow = pixels.Color(128, 128, 0);
+  uint32_t green = pixels.Color(0, 255, 0);
   uint32_t orange = pixels.Color(255, 165, 0);
   uint32_t purple = pixels.Color(128, 0, 128);
   uint32_t pink = pixels.Color(255, 192, 203);
   uint32_t crimson = pixels.Color(220, 20, 60);
   uint32_t turquoise = pixels.Color(64, 224, 208);
   uint32_t magenta = pixels.Color(255, 0, 255);
-  uint32_t Maize = pixels.Color(255, 203, 5);
-  uint32_t MGoBlue = pixels.Color(0, 39, 76);
-
-  // Other colors, unused for now.
-  /*
   uint32_t gold = pixels.Color(255, 215, 0);
   uint32_t darkYellow = pixels.Color(204, 204, 0);
   uint32_t darkViolet = pixels.Color(148,0,211);
@@ -131,40 +139,13 @@ void initColors(drumID drum) {
   uint32_t darkMagenta = pixels.Color(139,0,139);
   */
 
-  if (drum == pawn) {
-    colors[0] = black;
-    colors[1] = red;
-    colors[2] = blue;
+  if (drum == black_pawn) {
+    colors[0] = red;
+    colors[1] = black;
   }
-  else if (drum == tenor) {
-    colors[0] = black;
-    colors[1] = green;
-    colors[2] = MGoBlue;
-  }
-  else if (drum == snare) {
-    colors[0] = black;
-    colors[1] = red;
-    colors[2] = purple;
-  }
-  else if (drum == bass1) {
-    colors[0] = black;
-    colors[1] = red;
-  }
-  else if (drum == bass2) {
-    colors[0] = black;
-    colors[1] = yellow;
-  }
-  else if (drum == bass3) {
-    colors[0] = black;
-    colors[1] = green;
-  }
-  else if (drum == bass4) {
-    colors[0] = black;
-    colors[1] = purple;
-  }
-  else if (drum == bass5) {
-    colors[0] = black;
-    colors[1] = MGoBlue;
+  else if (drum == white_pawn) {
+    colors[0] = blue;
+    colors[1] = black;
   }
   
   myColor = colors[0];
@@ -179,8 +160,8 @@ ICACHE_RAM_ATTR void handleInterrupt() {
   //  Serial.println("Oh, hi");
     
   if ((millis() - lastDebounceTime) >= interruptDebounce) {
-    Serial.print("button pressed --> colorSwitch, color: ");
-    Serial.println(colorSwitch);
+    //Serial.print("button pressed --> colorSwitch, color: ");
+    //Serial.println(colorSwitch);
 
     // Get the color at the colorSwitch'th value of the array,
     //  then increment colorSwitch
