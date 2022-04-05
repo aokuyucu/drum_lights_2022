@@ -53,9 +53,14 @@ Adafruit_NeoPixel indicator(N_PIXELS_INDICATOR, LED_PIN_INDICATOR, NEO_GRB + NEO
 uint32_t colors[numColors];
 volatile uint32_t myColor = 0;  // Start with lights off. 
 volatile uint8_t colorSwitch = 1;
+const uint32_t black = pixels.Color(0, 0, 0);  // i.e. off
+const uint32_t red = pixels.Color(255, 0, 0);
+const uint32_t blue = pixels.Color(0, 0, 255);
+volatile uint32_t myColor0 = blue;
+volatile uint32_t myColor1 = red;
+
 volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 volatile uint32_t interruptDebounce = 250;    // or 150; 250 seems to work best
-
 //volatile unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
 //volatile uint32_t interruptMillis = millis();
 
@@ -75,7 +80,7 @@ void setup() {
   pixels.setBrightness(brightness_main);
   indicator.setBrightness(brightness_indicator);
 
-  setIndicator(myColor); // Indicator pixel should always be ON and should show the strip color.
+  setIndicator(myColor0); // Indicator pixel should always be ON and should show the strip color.
   
   // initialize the pushbutton pin as an input
   // INPUT_PULLUP and FALLING seem to work best
@@ -84,6 +89,32 @@ void setup() {
 }
 
 void loop() {
+  if(selectedEffect > 1) { 
+    selectedEffect=0; 
+  } 
+  
+  switch(selectedEffect) {
+    
+    case 0  : {
+                // RGBLoop - no parameters
+                RGBLoop();
+                break;
+              }
+
+    case 1  : {
+                // FadeInOut - Color (red, green. blue)
+                FadeInOut(0xff, 0x00, 0x00); // red
+                FadeInOut(0xff, 0xff, 0xff); // white 
+                FadeInOut(0x00, 0x00, 0xff); // blue
+                break;
+              }
+
+    // Color all pixels myColor, starting at position 0 
+    pixels.fill(myColor, 0, N_PIXELS_MAIN);
+    pixels.show(); // Send the updated pixel colors to the hardware.
+
+// all old code below
+/*
   int sensorReading;
 
   pixels.clear(); // Set all pixel colors to 'off'
@@ -109,20 +140,50 @@ void loop() {
   pixels.show(); // Send the updated pixel colors to the hardware.
 
   //delay(LOOP_DELAY);  // delay to avoid overloading the serial port buffer
+*/
 }
+
+// ***************************************
+// ** FastLed/NeoPixel Common Functions **
+// ***************************************
+
+// Apply LED color changes
+void showStrip() {
+ #ifdef ADAFRUIT_NEOPIXEL_H 
+   // NeoPixel
+   strip.show();
+ #endif
+ #ifndef ADAFRUIT_NEOPIXEL_H
+   // FastLED
+   FastLED.show();
+ #endif
+}
+
+// Set a LED color (not yet visible)
+void setPixel(int Pixel, byte red, byte green, byte blue) {
+ #ifdef ADAFRUIT_NEOPIXEL_H 
+   // NeoPixel
+   strip.setPixelColor(Pixel, strip.Color(red, green, blue));
+ #endif
+ #ifndef ADAFRUIT_NEOPIXEL_H 
+   // FastLED
+   leds[Pixel].r = red;
+   leds[Pixel].g = green;
+   leds[Pixel].b = blue;
+ #endif
+}
+
+// Set all LEDs to a given color and apply it (visible)
+void setAll(byte red, byte green, byte blue) {
+  for(int i = 0; i < NUM_LEDS; i++ ) {
+    setPixel(i, red, green, blue); 
+  }
+  showStrip();
+}
+
 
 // Initialize the colors[] array based on the drum ID
 void initColors(drumID drum) {
-  uint32_t black = pixels.Color(0, 0, 0);  // i.e. off
-  uint32_t red = pixels.Color(255, 0, 0);
-  uint32_t blue = pixels.Color(0, 0, 255);
-
-Serial.print("black: ");
-Serial.println(black);
-Serial.print("blue: ");
-Serial.println(blue);
-Serial.print("red: ");
-Serial.println(red);
 
   // Other colors, unused for now.
   /*
@@ -148,6 +209,14 @@ Serial.println(red);
   else if (drum == white_pawn) {
     colors[0] = blue;
     colors[1] = black;
+  }
+  else if (drum == white_knight) {
+    colors[0] = blue;
+    colors[1] = red;
+  }
+  else if (drum == black_king) {
+    colors[0] = red;
+    colors[1] = blue;
   }
   
   myColor = colors[0];
