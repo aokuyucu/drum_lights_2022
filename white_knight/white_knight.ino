@@ -73,7 +73,7 @@ void setup() {
   pixels.begin();     // INITIALIZE NeoPixel strip object (REQUIRED)
   indicator.begin();  // Initialize the Indicator strip
 
-  initColors(myDrum);
+  //initColors(myDrum);
   
   // Startup sequence(s)
   //chase(255, 0, 0);
@@ -100,15 +100,17 @@ void loop() {
     
     case 0  : {
                 // RGBLoop - no parameters
-                RGBLoop();
+                pixels.fill(myColor0, 0, N_PIXELS_MAIN);
+                showStrip();
+                delay(3);
                 break;
               }
 
     case 1  : {
                 // FadeInOut - Color (red, green. blue)
                 FadeInOut(0xff, 0x00, 0x00); // red
-                FadeInOut(0xff, 0xff, 0xff); // white 
-                FadeInOut(0x00, 0x00, 0xff); // blue
+                //FadeInOut(0xff, 0xff, 0xff); // white 
+                //FadeInOut(0x00, 0x00, 0xff); // blue
                 break;
               }
   }
@@ -296,7 +298,9 @@ ICACHE_RAM_ATTR void handleInterrupt() {
     setIndicator(myColor);  // Change the indicator LED to match the new color
 
     selectedEffect++;    
-    
+    Serial.print("button pressed --> selectedEffect: ");
+    Serial.println(selectedEffect);
+
     lastDebounceTime = millis();  // not sure if this should be current millis() or millis() from the if statement above.
   }
 }
