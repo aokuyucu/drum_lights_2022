@@ -58,6 +58,9 @@ const uint32_t red = pixels.Color(255, 0, 0);
 const uint32_t blue = pixels.Color(0, 0, 255);
 volatile uint32_t myColor0 = blue;
 volatile uint32_t myColor1 = red;
+uint8_t brightness_main0 = 125;
+uint8_t brightness_main1 = 255;
+byte selectedEffect = 0;
 
 volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
 volatile uint32_t interruptDebounce = 250;    // or 150; 250 seems to work best
@@ -77,7 +80,7 @@ void setup() {
   //startup(myColor);
   
   // Set to full brightness for the duration of the sketch
-  pixels.setBrightness(brightness_main);
+  pixels.setBrightness(brightness_main0);
   indicator.setBrightness(brightness_indicator);
 
   setIndicator(myColor0); // Indicator pixel should always be ON and should show the strip color.
@@ -91,7 +94,7 @@ void setup() {
 void loop() {
   if(selectedEffect > 1) { 
     selectedEffect=0; 
-  } 
+  }
   
   switch(selectedEffect) {
     
@@ -108,10 +111,11 @@ void loop() {
                 FadeInOut(0x00, 0x00, 0xff); // blue
                 break;
               }
+  }
 
     // Color all pixels myColor, starting at position 0 
-    pixels.fill(myColor, 0, N_PIXELS_MAIN);
-    pixels.show(); // Send the updated pixel colors to the hardware.
+    //pixels.fill(myColor, 0, N_PIXELS_MAIN);
+    //pixels.show(); // Send the updated pixel colors to the hardware.
 
 // all old code below
 /*
@@ -143,6 +147,55 @@ void loop() {
 */
 }
 
+// *************************
+// ** LEDEffect Functions **
+// *************************
+
+void RGBLoop(){
+  for(int j = 0; j < 3; j++ ) { 
+    // Fade IN
+    for(int k = 0; k < 256; k++) { 
+      switch(j) { 
+        case 0: setAll(k,0,0); break;
+        case 1: setAll(0,k,0); break;
+        case 2: setAll(0,0,k); break;
+      }
+      showStrip();
+      delay(3);
+    }
+    // Fade OUT
+    for(int k = 255; k >= 0; k--) { 
+      switch(j) { 
+        case 0: setAll(k,0,0); break;
+        case 1: setAll(0,k,0); break;
+        case 2: setAll(0,0,k); break;
+      }
+      showStrip();
+      delay(3);
+    }
+  }
+}
+
+void FadeInOut(byte red, byte green, byte blue){
+  float r, g, b;
+      
+  for(int k = 0; k < 256; k=k+1) { 
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    setAll(r,g,b);
+    showStrip();
+  }
+     
+  for(int k = 255; k >= 0; k=k-2) {
+    r = (k/256.0)*red;
+    g = (k/256.0)*green;
+    b = (k/256.0)*blue;
+    setAll(r,g,b);
+    showStrip();
+  }
+}
+
 // ***************************************
 // ** FastLed/NeoPixel Common Functions **
 // ***************************************
@@ -151,7 +204,7 @@ void loop() {
 void showStrip() {
  #ifdef ADAFRUIT_NEOPIXEL_H 
    // NeoPixel
-   strip.show();
+   pixels.show();
  #endif
  #ifndef ADAFRUIT_NEOPIXEL_H
    // FastLED
@@ -163,7 +216,7 @@ void showStrip() {
 void setPixel(int Pixel, byte red, byte green, byte blue) {
  #ifdef ADAFRUIT_NEOPIXEL_H 
    // NeoPixel
-   strip.setPixelColor(Pixel, strip.Color(red, green, blue));
+   pixels.setPixelColor(Pixel, pixels.Color(red, green, blue));
  #endif
  #ifndef ADAFRUIT_NEOPIXEL_H 
    // FastLED
@@ -175,12 +228,11 @@ void setPixel(int Pixel, byte red, byte green, byte blue) {
 
 // Set all LEDs to a given color and apply it (visible)
 void setAll(byte red, byte green, byte blue) {
-  for(int i = 0; i < NUM_LEDS; i++ ) {
+  for(int i = 0; i < N_PIXELS_MAIN; i++ ) {
     setPixel(i, red, green, blue); 
   }
   showStrip();
 }
-
 
 // Initialize the colors[] array based on the drum ID
 void initColors(drumID drum) {
@@ -242,6 +294,9 @@ ICACHE_RAM_ATTR void handleInterrupt() {
     if (colorSwitch >= numColors)
       colorSwitch = 0;
     setIndicator(myColor);  // Change the indicator LED to match the new color
+
+    selectedEffect++;    
+    
     lastDebounceTime = millis();  // not sure if this should be current millis() or millis() from the if statement above.
   }
 }
