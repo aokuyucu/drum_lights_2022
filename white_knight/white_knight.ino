@@ -11,12 +11,14 @@
 #include "drum_config.h"
 
 // ATTN: These next three consts must be adjusted to the correct value for each drum
-const drumID myDrum = white_pawn;   // What drum am I?
+const drumID myDrum = white_knight;   // What drum am I?
 /* Number of LEDs attached to the Arduino.
- * For 2022, this is 125 (64 for grid + 31 for first strip + 30 for second strip)
+ * For 2022, this is 125 for pawns (64 for grid + 31 for first strip + 30 for second strip)
+ * For knights: 108 (75 + 33)
+ * For kings: 121 (88 + 33)
  * Other values could be: 150 for full LED strip, 64 for small grid, 256 for large grid.
  */
-const int N_PIXELS_MAIN = 125;
+const int N_PIXELS_MAIN = 108;
 const uint8_t numColors = 2;  // Number of colors
 
 /* Threshold value to decide when the detected sound is a knock or not
