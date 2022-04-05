@@ -11,7 +11,7 @@
 #include "drum_config.h"
 
 // ATTN: These next three consts must be adjusted to the correct value for each drum
-const drumID myDrum = black_pawn;   // What drum am I?
+const drumID myDrum = white_pawn;   // What drum am I?
 /* Number of LEDs attached to the Arduino.
  * For 2022, this is 125 (64 for grid + 31 for first strip + 30 for second strip)
  * Other values could be: 150 for full LED strip, 64 for small grid, 256 for large grid.
@@ -25,8 +25,8 @@ const uint8_t numColors = 2;  // Number of colors
 uint8_t threshold = 10;   //65;
 
 // Brightness settings. Valid values are 0-255.
-uint8_t brightness_main = 255;      // Brightness of the main light strip or grid.
-                                    // Use 150 for bass 2 (yellow).
+uint8_t brightness_main = 50;      // Brightness of the main light strip or grid.
+                                    // Full = 255. Use 150 for bass 2 (yellow).
 uint8_t brightness_indicator = 25;  // Brightness of the single pixel inidicator.
 
 const int N_PIXELS_INDICATOR = 1;   // Single pixel indicator light.
