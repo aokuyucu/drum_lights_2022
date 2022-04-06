@@ -18,7 +18,7 @@ const drumID myDrum = white_knight;   // What drum am I?
  * For kings: 121 (88 + 33)
  * Other values could be: 150 for full LED strip, 64 for small grid, 256 for large grid.
  */
-const int N_PIXELS_MAIN = 108;
+const int N_PIXELS_MAIN = 64; //108;
 const uint8_t numColors = 2;  // Number of colors
 
 /* Threshold value to decide when the detected sound is a knock or not
@@ -92,27 +92,34 @@ void setup() {
 }
 
 void loop() {
-  if(selectedEffect > 1) { 
+  if(selectedEffect > 2) { 
     selectedEffect=0; 
   }
-  
-  switch(selectedEffect) {
-    
-    case 0  : {
-                // RGBLoop - no parameters
-                pixels.fill(myColor0, 0, N_PIXELS_MAIN);
-                showStrip();
-                delay(3);
-                break;
-              }
 
+  switch(selectedEffect) {
+    case 0  : {
+      // All on blue
+      setIndicator(myColor0); // Indicator pixel should always be ON and should show the strip color.
+      pixels.setBrightness(brightness_main0);
+      pixels.fill(myColor0, 0, N_PIXELS_MAIN);
+      showStrip();
+      delay(3);
+      break;
+    }
     case 1  : {
-                // FadeInOut - Color (red, green. blue)
-                FadeInOut(0xff, 0x00, 0x00); // red
-                //FadeInOut(0xff, 0xff, 0xff); // white 
-                //FadeInOut(0x00, 0x00, 0xff); // blue
-                break;
-              }
+      // Glow red
+      setIndicator(myColor1); // Indicator pixel should always be ON and should show the strip color.
+      FadeInOut(0xff, 0x00, 0x00); // red
+      break;
+    }
+    case 2  : {
+      // Off
+      pixels.clear();
+      showStrip();
+      indicator.clear();
+      indicator.show();
+      break;
+    }
   }
 
     // Color all pixels myColor, starting at position 0 
@@ -152,32 +159,6 @@ void loop() {
 // *************************
 // ** LEDEffect Functions **
 // *************************
-
-void RGBLoop(){
-  for(int j = 0; j < 3; j++ ) { 
-    // Fade IN
-    for(int k = 0; k < 256; k++) { 
-      switch(j) { 
-        case 0: setAll(k,0,0); break;
-        case 1: setAll(0,k,0); break;
-        case 2: setAll(0,0,k); break;
-      }
-      showStrip();
-      delay(3);
-    }
-    // Fade OUT
-    for(int k = 255; k >= 0; k--) { 
-      switch(j) { 
-        case 0: setAll(k,0,0); break;
-        case 1: setAll(0,k,0); break;
-        case 2: setAll(0,0,k); break;
-      }
-      showStrip();
-      delay(3);
-    }
-  }
-}
-
 void FadeInOut(byte red, byte green, byte blue){
   float r, g, b;
       
@@ -187,6 +168,7 @@ void FadeInOut(byte red, byte green, byte blue){
     b = (k/256.0)*blue;
     setAll(r,g,b);
     showStrip();
+    delay(10);
   }
      
   for(int k = 255; k >= 0; k=k-2) {
@@ -195,6 +177,7 @@ void FadeInOut(byte red, byte green, byte blue){
     b = (k/256.0)*blue;
     setAll(r,g,b);
     showStrip();
+    delay(10);
   }
 }
 
@@ -204,34 +187,15 @@ void FadeInOut(byte red, byte green, byte blue){
 
 // Apply LED color changes
 void showStrip() {
- #ifdef ADAFRUIT_NEOPIXEL_H 
    // NeoPixel
    pixels.show();
- #endif
- #ifndef ADAFRUIT_NEOPIXEL_H
-   // FastLED
-   FastLED.show();
- #endif
-}
-
-// Set a LED color (not yet visible)
-void setPixel(int Pixel, byte red, byte green, byte blue) {
- #ifdef ADAFRUIT_NEOPIXEL_H 
-   // NeoPixel
-   pixels.setPixelColor(Pixel, pixels.Color(red, green, blue));
- #endif
- #ifndef ADAFRUIT_NEOPIXEL_H 
-   // FastLED
-   leds[Pixel].r = red;
-   leds[Pixel].g = green;
-   leds[Pixel].b = blue;
- #endif
 }
 
 // Set all LEDs to a given color and apply it (visible)
-void setAll(byte red, byte green, byte blue) {
+void setAll(byte redValue, byte greenValue, byte blueValue) {
   for(int i = 0; i < N_PIXELS_MAIN; i++ ) {
-    setPixel(i, red, green, blue); 
+    //setPixel(i, red, green, blue);
+    pixels.setPixelColor(i, pixels.Color(redValue, greenValue, blueValue));
   }
   showStrip();
 }
@@ -297,8 +261,10 @@ ICACHE_RAM_ATTR void handleInterrupt() {
       colorSwitch = 0;
     setIndicator(myColor);  // Change the indicator LED to match the new color
 
-    selectedEffect++;    
     Serial.print("button pressed --> selectedEffect: ");
+    Serial.println(selectedEffect);
+    selectedEffect++;    
+    Serial.print("button pressed --> selectedEffect++: ");
     Serial.println(selectedEffect);
 
     lastDebounceTime = millis();  // not sure if this should be current millis() or millis() from the if statement above.
@@ -397,5 +363,30 @@ uint32_t Wheel(byte WheelPos) {
   } else {
    WheelPos -= 170;
    return pixels.Color(0, WheelPos * 3, 255 - WheelPos * 3);
+  }
+}
+
+void RGBLoop(){
+  for(int j = 0; j < 3; j++ ) { 
+    // Fade IN
+    for(int k = 0; k < 256; k++) { 
+      switch(j) { 
+        case 0: setAll(k,0,0); break;
+        case 1: setAll(0,k,0); break;
+        case 2: setAll(0,0,k); break;
+      }
+      showStrip();
+      delay(3);
+    }
+    // Fade OUT
+    for(int k = 255; k >= 0; k--) { 
+      switch(j) { 
+        case 0: setAll(k,0,0); break;
+        case 1: setAll(0,k,0); break;
+        case 2: setAll(0,0,k); break;
+      }
+      showStrip();
+      delay(3);
+    }
   }
 }
