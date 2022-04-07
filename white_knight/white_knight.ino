@@ -10,16 +10,20 @@
 #include <Adafruit_NeoPixel.h>
 #include "drum_config.h"
 
-// ATTN: These next three consts must be adjusted to the correct value for each drum
+/* ATTN: These next three consts (drumID, N_PIXELS_MAIN, threshold)
+ * must be adjusted to the correct value for each drum. 
+ * 
+ * First is drumID, which should be set to the appropriate value from drum_config.h
+ */
 const drumID myDrum = white_knight;   // What drum am I?
+
 /* Number of LEDs attached to the Arduino.
  * For 2022, this is 125 for pawns (64 for grid + 31 for first strip + 30 for second strip)
  * For knights: 108 (75 + 33)
  * For kings: 121 (88 + 33)
  * Other values could be: 150 for full LED strip, 64 for small grid, 256 for large grid.
  */
-const int N_PIXELS_MAIN = 64; //108;
-const uint8_t numColors = 2;  // Number of colors
+const int N_PIXELS_MAIN = 108;
 
 /* Threshold value to decide when the detected sound is a knock or not
  * Other useful values: 20, 50, 100, 200
@@ -50,14 +54,12 @@ const int LOOP_DELAY = 200; // Time (in milliseconds) to pause between loops
 Adafruit_NeoPixel pixels(N_PIXELS_MAIN, LED_PIN_MAIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel indicator(N_PIXELS_INDICATOR, LED_PIN_INDICATOR, NEO_GRB + NEO_KHZ800);
 
-uint32_t colors[numColors];
-volatile uint32_t myColor = 0;  // Start with lights off. 
-volatile uint8_t colorSwitch = 1;
 const uint32_t black = pixels.Color(0, 0, 0);  // i.e. off
 const uint32_t red = pixels.Color(255, 0, 0);
 const uint32_t blue = pixels.Color(0, 0, 255);
 volatile uint32_t myColor0 = blue;
 volatile uint32_t myColor1 = red;
+volatile uint32_t myColor2 = black;
 uint8_t brightness_main0 = 125;
 uint8_t brightness_main1 = 255;
 byte selectedEffect = 0;
@@ -72,18 +74,16 @@ void setup() {
 
   pixels.begin();     // INITIALIZE NeoPixel strip object (REQUIRED)
   indicator.begin();  // Initialize the Indicator strip
-
-  //initColors(myDrum);
   
   // Startup sequence(s)
   //chase(255, 0, 0);
-  //startup(myColor);
+  //startup(myColor0);
   
-  // Set to full brightness for the duration of the sketch
+  // Set brightness of main LEDs
   pixels.setBrightness(brightness_main0);
-  indicator.setBrightness(brightness_indicator);
 
-  setIndicator(myColor0); // Indicator pixel should always be ON and should show the strip color.
+   // Indicator pixel should always be ON and show the strip color.
+  setIndicator(myColor0);
   
   // initialize the pushbutton pin as an input
   // INPUT_PULLUP and FALLING seem to work best
@@ -92,18 +92,27 @@ void setup() {
 }
 
 void loop() {
-  if(selectedEffect > 2) { 
+  setEffect();
+
+  //delay(LOOP_DELAY);  // delay to avoid overloading the serial port buffer
+}
+
+// *************************
+// ** LEDEffect Functions **
+// *************************
+void setEffect() {
+  if (selectedEffect > 1) { 
     selectedEffect=0; 
   }
 
-  switch(selectedEffect) {
+  switch (selectedEffect) {
     case 0  : {
       // All on blue
       setIndicator(myColor0); // Indicator pixel should always be ON and should show the strip color.
       pixels.setBrightness(brightness_main0);
       pixels.fill(myColor0, 0, N_PIXELS_MAIN);
       showStrip();
-      delay(3);
+      //delay(3);
       break;
     }
     case 1  : {
@@ -114,61 +123,24 @@ void loop() {
     }
     case 2  : {
       // Off
+      setIndicator(myColor2);
       pixels.clear();
       showStrip();
-      indicator.clear();
-      indicator.show();
       break;
     }
   }
-
-    // Color all pixels myColor, starting at position 0 
-    //pixels.fill(myColor, 0, N_PIXELS_MAIN);
-    //pixels.show(); // Send the updated pixel colors to the hardware.
-
-// all old code below
-/*
-  int sensorReading;
-
-  pixels.clear(); // Set all pixel colors to 'off'
-
-  sensorReading = analogRead(ANALOG_PIN); // Raw reading from sensor
-  if (sensorReading >= threshold) {
-    // The first NeoPixel in a strand is #0, second is 1, all the way up
-    // to the count of pixels minus one.
-    // pixels.Color() takes RGB values, from 0,0,0 up to 255,255,255
-  
-    // Limit the number of readings printed
-    //Serial.print("Raw sensor reading: ");
-    //Serial.println(sensorReading);
-
-    // Color all pixels myColor, starting at position 0 
-    pixels.fill(myColor, 0, N_PIXELS_MAIN);
-  }
-  else {
-    // Turn off pixels
-    pixels.clear();
-  }
-
-  pixels.show(); // Send the updated pixel colors to the hardware.
-
-  //delay(LOOP_DELAY);  // delay to avoid overloading the serial port buffer
-*/
 }
 
-// *************************
-// ** LEDEffect Functions **
-// *************************
-void FadeInOut(byte red, byte green, byte blue){
+void FadeInOut(byte red, byte green, byte blue) {
   float r, g, b;
       
-  for(int k = 0; k < 256; k=k+1) { 
+  for (int k = 0; k < 256; k=k+1) { 
     r = (k/256.0)*red;
     g = (k/256.0)*green;
     b = (k/256.0)*blue;
     setAll(r,g,b);
     showStrip();
-    delay(10);
+    delay(5);
   }
      
   for(int k = 255; k >= 0; k=k-2) {
@@ -182,7 +154,7 @@ void FadeInOut(byte red, byte green, byte blue){
 }
 
 // ***************************************
-// ** FastLed/NeoPixel Common Functions **
+// ** NeoPixel Common Functions **
 // ***************************************
 
 // Apply LED color changes
@@ -193,51 +165,11 @@ void showStrip() {
 
 // Set all LEDs to a given color and apply it (visible)
 void setAll(byte redValue, byte greenValue, byte blueValue) {
-  for(int i = 0; i < N_PIXELS_MAIN; i++ ) {
+  for (int i = 0; i < N_PIXELS_MAIN; i++ ) {
     //setPixel(i, red, green, blue);
     pixels.setPixelColor(i, pixels.Color(redValue, greenValue, blueValue));
   }
   showStrip();
-}
-
-// Initialize the colors[] array based on the drum ID
-void initColors(drumID drum) {
-
-  // Other colors, unused for now.
-  /*
-  uint32_t yellow = pixels.Color(128, 128, 0);
-  uint32_t green = pixels.Color(0, 255, 0);
-  uint32_t orange = pixels.Color(255, 165, 0);
-  uint32_t purple = pixels.Color(128, 0, 128);
-  uint32_t pink = pixels.Color(255, 192, 203);
-  uint32_t crimson = pixels.Color(220, 20, 60);
-  uint32_t turquoise = pixels.Color(64, 224, 208);
-  uint32_t magenta = pixels.Color(255, 0, 255);
-  uint32_t gold = pixels.Color(255, 215, 0);
-  uint32_t darkYellow = pixels.Color(204, 204, 0);
-  uint32_t darkViolet = pixels.Color(148,0,211);
-  uint32_t darkOrchid = pixels.Color(153,50,204);
-  uint32_t darkMagenta = pixels.Color(139,0,139);
-  */
-
-  if (drum == black_pawn) {
-    colors[0] = red;
-    colors[1] = black;
-  }
-  else if (drum == white_pawn) {
-    colors[0] = blue;
-    colors[1] = black;
-  }
-  else if (drum == white_knight) {
-    colors[0] = blue;
-    colors[1] = red;
-  }
-  else if (drum == black_king) {
-    colors[0] = red;
-    colors[1] = blue;
-  }
-  
-  myColor = colors[0];
 }
 
 /* 
@@ -249,23 +181,31 @@ ICACHE_RAM_ATTR void handleInterrupt() {
   //  Serial.println("Oh, hi");
     
   if ((millis() - lastDebounceTime) >= interruptDebounce) {
-    //Serial.print("button pressed --> colorSwitch, color: ");
-    //Serial.println(colorSwitch);
+    //Serial.print("button pressed --> selectedEffect: ");
+    //Serial.println(selectedEffect);
+    selectedEffect++;
+    //Serial.print("button pressed --> selectedEffect++: ");
+    //Serial.println(selectedEffect);
 
-    // Get the color at the colorSwitch'th value of the array,
-    //  then increment colorSwitch
-    myColor = colors[colorSwitch++];
+    // Set the indicaotr light right away because the main strip doesn't change
+    // until the current effect finishes, which can take a few seconds.
+    if (selectedEffect > 1)
+      selectedEffect=0; 
 
-    // If colorSwitch has gone past the last index value of the array, then reset to index 0.
-    if (colorSwitch >= numColors)
-      colorSwitch = 0;
-    setIndicator(myColor);  // Change the indicator LED to match the new color
-
-    Serial.print("button pressed --> selectedEffect: ");
-    Serial.println(selectedEffect);
-    selectedEffect++;    
-    Serial.print("button pressed --> selectedEffect++: ");
-    Serial.println(selectedEffect);
+    switch (selectedEffect) {
+      case 0  : {
+        // All on blue
+        setIndicator(myColor0); // Indicator pixel should always be ON and should show the strip color.
+        break;
+      }
+      case 1  : {
+        // Glow red
+        setIndicator(myColor1); // Indicator pixel should always be ON and should show the strip color.
+        break;
+      }
+    }
+    
+    //setEffect();
 
     lastDebounceTime = millis();  // not sure if this should be current millis() or millis() from the if statement above.
   }
@@ -317,10 +257,10 @@ void flash(uint8_t onMS, uint8_t offMS, uint32_t color) {
 }
 
 // Gradually ascend to full brightness for the given color
-void gradualAscent(uint32_t color) {
+void gradualAscent(uint32_t ascentColor) {
     uint8_t  interimDelay = 150;  // delay between each increasing step of brightness in the gradual ascent
     
-    pixels.fill(myColor, 0, N_PIXELS_MAIN);
+    pixels.fill(ascentColor, 0, N_PIXELS_MAIN);
     pixels.setBrightness(32);
     pixels.show();
     delay(interimDelay);
@@ -363,30 +303,5 @@ uint32_t Wheel(byte WheelPos) {
   } else {
    WheelPos -= 170;
    return pixels.Color(0, WheelPos * 3, 255 - WheelPos * 3);
-  }
-}
-
-void RGBLoop(){
-  for(int j = 0; j < 3; j++ ) { 
-    // Fade IN
-    for(int k = 0; k < 256; k++) { 
-      switch(j) { 
-        case 0: setAll(k,0,0); break;
-        case 1: setAll(0,k,0); break;
-        case 2: setAll(0,0,k); break;
-      }
-      showStrip();
-      delay(3);
-    }
-    // Fade OUT
-    for(int k = 255; k >= 0; k--) { 
-      switch(j) { 
-        case 0: setAll(k,0,0); break;
-        case 1: setAll(0,k,0); break;
-        case 2: setAll(0,0,k); break;
-      }
-      showStrip();
-      delay(3);
-    }
   }
 }
