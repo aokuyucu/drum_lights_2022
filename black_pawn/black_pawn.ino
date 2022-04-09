@@ -22,7 +22,7 @@ const uint8_t numColors = 2;  // Number of colors
 /* Threshold value to decide when the detected sound is a knock or not
  * Other useful values: 20, 50, 100, 200
  */
-uint8_t threshold = 10;   //65;
+uint8_t threshold = 7;   //65;
 
 // Brightness settings. Valid values are 0-255.
 uint8_t brightness_main = 255;      // Brightness of the main light strip or grid.
