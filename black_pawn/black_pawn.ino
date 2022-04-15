@@ -8,10 +8,10 @@
  */
 
 #include <Adafruit_NeoPixel.h>
-#include "drum_config.h"
+
+// Black Pawn
 
 // ATTN: These next three consts must be adjusted to the correct value for each drum
-const drumID myDrum = black_pawn;   // What drum am I?
 /* Number of LEDs attached to the Arduino.
  * For 2022, this is 125 (64 for grid + 31 for first strip + 30 for second strip)
  * Other values could be: 150 for full LED strip, 64 for small grid, 256 for large grid.
@@ -48,14 +48,10 @@ const int LOOP_DELAY = 200; // Time (in milliseconds) to pause between loops
 Adafruit_NeoPixel pixels(N_PIXELS_MAIN, LED_PIN_MAIN, NEO_GRB + NEO_KHZ800);
 Adafruit_NeoPixel indicator(N_PIXELS_INDICATOR, LED_PIN_INDICATOR, NEO_GRB + NEO_KHZ800);
 
-uint32_t colors[numColors];
-volatile uint32_t myColor = 0;  // Start with lights off. 
-volatile uint8_t colorSwitch = 1;
-volatile unsigned long lastDebounceTime = 0;  // the last time the output pin was toggled
-volatile uint32_t interruptDebounce = 250;    // or 150; 250 seems to work best
-
-//volatile unsigned long debounceDelay = 50;    // the debounce time; increase if the output flickers
-//volatile uint32_t interruptMillis = millis();
+const uint32_t black = pixels.Color(0, 0, 0);  // i.e. off
+const uint32_t red = pixels.Color(255, 0, 0);
+const uint32_t blue = pixels.Color(0, 0, 255);
+volatile uint32_t myColor = red;
 
 void setup() {
   Serial.begin(9600);  // use the serial port
@@ -63,22 +59,14 @@ void setup() {
   pixels.begin();     // INITIALIZE NeoPixel strip object (REQUIRED)
   indicator.begin();  // Initialize the Indicator strip
 
-  initColors(myDrum);
-  
   // Startup sequence(s)
   //chase(255, 0, 0);
-  //startup(myColor);
   
   // Set to full brightness for the duration of the sketch
   pixels.setBrightness(brightness_main);
   indicator.setBrightness(brightness_indicator);
 
   setIndicator(myColor); // Indicator pixel should always be ON and should show the strip color.
-  
-  // initialize the pushbutton pin as an input
-  // INPUT_PULLUP and FALLING seem to work best
-  pinMode(BUTTON_PIN, INPUT_PULLUP);  // or INPUT
-  attachInterrupt(digitalPinToInterrupt(BUTTON_PIN), handleInterrupt, FALLING); // FALLING or RISING or CHANGE
 }
 
 void loop() {
@@ -109,72 +97,6 @@ void loop() {
   //delay(LOOP_DELAY);  // delay to avoid overloading the serial port buffer
 }
 
-// Initialize the colors[] array based on the drum ID
-void initColors(drumID drum) {
-  uint32_t black = pixels.Color(0, 0, 0);  // i.e. off
-  uint32_t red = pixels.Color(255, 0, 0);
-  uint32_t blue = pixels.Color(0, 0, 255);
-
-Serial.print("black: ");
-Serial.println(black);
-Serial.print("blue: ");
-Serial.println(blue);
-Serial.print("red: ");
-Serial.println(red);
-
-  // Other colors, unused for now.
-  /*
-  uint32_t yellow = pixels.Color(128, 128, 0);
-  uint32_t green = pixels.Color(0, 255, 0);
-  uint32_t orange = pixels.Color(255, 165, 0);
-  uint32_t purple = pixels.Color(128, 0, 128);
-  uint32_t pink = pixels.Color(255, 192, 203);
-  uint32_t crimson = pixels.Color(220, 20, 60);
-  uint32_t turquoise = pixels.Color(64, 224, 208);
-  uint32_t magenta = pixels.Color(255, 0, 255);
-  uint32_t gold = pixels.Color(255, 215, 0);
-  uint32_t darkYellow = pixels.Color(204, 204, 0);
-  uint32_t darkViolet = pixels.Color(148,0,211);
-  uint32_t darkOrchid = pixels.Color(153,50,204);
-  uint32_t darkMagenta = pixels.Color(139,0,139);
-  */
-
-  if (drum == black_pawn) {
-    colors[0] = red;
-    colors[1] = black;
-  }
-  else if (drum == white_pawn) {
-    colors[0] = blue;
-    colors[1] = black;
-  }
-  
-  myColor = colors[0];
-}
-
-/* 
- * Handle a button press. 
- */
-ICACHE_RAM_ATTR void handleInterrupt() {
-  //Serial.println("handleInterrupt");
-  //if (button1.isPressed())
-  //  Serial.println("Oh, hi");
-    
-  if ((millis() - lastDebounceTime) >= interruptDebounce) {
-    //Serial.print("button pressed --> colorSwitch, color: ");
-    //Serial.println(colorSwitch);
-
-    // Get the color at the colorSwitch'th value of the array,
-    //  then increment colorSwitch
-    myColor = colors[colorSwitch++];
-
-    // If colorSwitch has gone past the last index value of the array, then reset to index 0.
-    if (colorSwitch >= numColors)
-      colorSwitch = 0;
-    setIndicator(myColor);  // Change the indicator LED to match the new color
-    lastDebounceTime = millis();  // not sure if this should be current millis() or millis() from the if statement above.
-  }
-}
-
 /* 
  * Set the first pixel on D7 to be always ON.
  */
@@ -182,22 +104,6 @@ void setIndicator(uint32_t color) {
   indicator.clear();
   indicator.fill(color, 0, 1); // Indicator pixel should always be ON.
   indicator.show();
-}
-
-/*
- * Startup function for the main LED strip
- * Flicker a few times at the start, then gradually ascend to full brightness.
- */
-void startup(uint32_t color) {
-  // Flicker a few times...
-  flash(ShortFlash_OnMS, ShortFlash_OffMS, color);
-  flash(ShortFlash_OnMS, ShortFlash_OffMS, color);
-  flash(ShortFlash_OnMS, ShortFlash_OffMS, color);
-  flash(MediumFlash_OnMS, MediumFlash_OffMS, color);
-  flash(MediumFlash_OnMS, MediumFlash_OffMS, color);
-
-  // ... then gradually ascend to full brightness
-  gradualAscent(color);
 }
 
 void chase(uint8_t redValue, uint8_t greenValue, uint8_t blueValue) {
